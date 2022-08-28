@@ -1,8 +1,24 @@
 use std::io::{stderr, Write};
 
 fn main() {
-    let image_width: i32 = 256;
-    let image_height: i32 = 256;
+    // Image
+
+    let aspect_ratio = 16. / 9.;
+    let image_width: i32 = 400;
+    let image_height: i32 = (image_width as f64 / aspect_ratio) as i32;
+
+    // Camera
+
+    let viewport_height = 2.;
+    let viewport_width = aspect_ratio * viewport_height;
+    let focal_length = 1.;
+
+    let origin: Point3 = Vec3::zero();
+    let horizontal = Vec3(viewport_width, 0., 0.);
+    let vertical = Vec3(0., viewport_height, 0.);
+    let lower_left_corner = origin - horizontal / 2. - vertical / 2. - Vec3(0., 0., focal_length);
+
+    // Render
 
     println!("P3\n{} {}\n255", image_width, image_height);
 
@@ -11,12 +27,15 @@ fn main() {
         stderr().flush().expect("failed to flush stderr");
 
         for i in 0..image_width {
-            let pixel_color = Vec3(
-                (i as f64) / (image_width - 1) as f64,
-                (j as f64) / (image_height - 1) as f64,
-                0.25,
-            );
+            let j = j as f64;
+            let i = i as f64;
 
+            let u = i / (image_width - 1) as f64;
+            let v = j / (image_height - 1) as f64;
+            let direction = lower_left_corner + horizontal * u + vertical * v - origin;
+            let r = Ray { origin, direction };
+
+            let pixel_color = ray_color(r);
             write_color(pixel_color);
         }
     }
@@ -31,12 +50,30 @@ fn write_color(pixel_color: Color) {
     println!("{} {} {}", r, g, b);
 }
 
+fn ray_color(r: Ray) -> Color {
+    let unit_direction = r.direction.unit_vector();
+    let t = 0.5 * (1. + unit_direction.y());
+    Vec3(1., 1., 1.) * (1. - t) + Vec3(0.5, 0.7, 1.) * t
+}
+
 #[derive(Clone, Copy)]
 struct Vec3(f64, f64, f64);
 type Point3 = Vec3;
 type Color = Vec3;
 
 impl Vec3 {
+    fn x(self) -> f64 {
+        self.0
+    }
+
+    fn y(self) -> f64 {
+        self.1
+    }
+
+    fn z(self) -> f64 {
+        self.2
+    }
+
     fn zero() -> Self {
         Vec3(0., 0., 0.)
     }
@@ -119,5 +156,16 @@ impl std::ops::Div<f64> for Vec3 {
 impl std::ops::DivAssign<f64> for Vec3 {
     fn div_assign(&mut self, rhs: f64) {
         *self = *self / rhs;
+    }
+}
+
+struct Ray {
+    origin: Point3,
+    direction: Vec3,
+}
+
+impl Ray {
+    fn at(&self, t: f64) -> Point3 {
+        self.origin + self.direction * t
     }
 }
