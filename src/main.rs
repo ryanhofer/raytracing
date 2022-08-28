@@ -57,7 +57,28 @@ fn write_color(pixel_color: Color) {
 }
 
 fn ray_color(r: Ray) -> Color {
+    let t = hit_sphere(Point3::new(0., 0., -1.), 0.5, r);
+    if t > 0. {
+        let n = (r.at(t) - Vec3::new(0., 0., -1.)).unit_vector();
+        return Color::new(n.x() + 1., n.y() + 1., n.z() + 1.) * 0.5;
+    }
+
     let unit_direction = r.direction.unit_vector();
-    let t = 0.5 * (1. + unit_direction.y());
+    let t = 0.5 * (unit_direction.y() + 1.);
     Vec3::new(1., 1., 1.) * (1. - t) + Vec3::new(0.5, 0.7, 1.) * t
+}
+
+fn hit_sphere(center: Point3, radius: f64, r: Ray) -> f64 {
+    let oc = r.origin - center;
+
+    let a = r.direction.dot_product(r.direction);
+    let b = 2. * oc.dot_product(r.direction);
+    let c = oc.dot_product(oc) - radius * radius;
+
+    let discriminant = b * b - 4. * a * c;
+    if discriminant < 0. {
+        return -1.;
+    }
+
+    return (-b - discriminant.sqrt()) / (2. * a);
 }
