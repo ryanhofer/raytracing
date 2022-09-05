@@ -1,4 +1,5 @@
 use rand::Rng;
+use std::ops::Neg;
 
 use crate::color;
 use crate::vector::{random_in_unit_sphere, random_unit_vector, Color, Point3, Vec3};
@@ -71,8 +72,17 @@ impl Material {
                 };
 
                 let unit_direction = r.direction.unit_vector();
-                let refracted = unit_direction.refract(hit.normal, refraction_ratio);
-                let scattered = Ray::new(hit.p, refracted);
+                let cos_theta = unit_direction.neg().dot_product(hit.normal).min(1.);
+                let sin_theta = (1. - cos_theta * cos_theta).sqrt();
+
+                let cannot_refract = refraction_ratio * sin_theta > 1.;
+                let direction = if cannot_refract {
+                    unit_direction.reflect(hit.normal)
+                } else {
+                    unit_direction.refract(hit.normal, refraction_ratio)
+                };
+
+                let scattered = Ray::new(hit.p, direction);
                 let attenuation = color::WHITE;
 
                 Some(ScatterResult {
