@@ -32,9 +32,11 @@ fn main() {
     };
     let material_left = Material::Metal {
         albedo: Color::new(0.8, 0.8, 0.8),
+        fuzz: 0.3,
     };
     let material_right = Material::Metal {
         albedo: Color::new(0.8, 0.6, 0.2),
+        fuzz: 1.0,
     };
 
     let world = World::new(vec![

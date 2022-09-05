@@ -56,17 +56,17 @@ impl Hit for Sphere {
         }
 
         let sqrtd = discriminant.sqrt();
+        let roots = [
+            (-half_b - sqrtd) / a, // 1st root
+            (-half_b + sqrtd) / a, // 2nd root
+        ];
 
         // Find the nearest root within the specified range (t_min, t_max)
-        let mut root = (-half_b - sqrtd) / a;
-        if root < t_min || t_max < root {
-            root = (-half_b + sqrtd) / a;
-            if root < t_min || t_max < root {
-                return None;
-            }
-        }
+        let t = match roots.into_iter().find(|&t| t_min <= t && t <= t_max) {
+            Some(t) => t,
+            None => return None,
+        };
 
-        let t = root;
         let p = r.at(t);
         let outward_normal = (p - self.center) / self.radius;
 

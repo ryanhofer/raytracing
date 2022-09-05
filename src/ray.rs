@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use crate::vector::{random_unit_vector, Color, Point3, Vec3};
+use crate::vector::{random_in_unit_sphere, random_unit_vector, Color, Point3, Vec3};
 
 #[derive(Clone, Copy)]
 pub struct Ray {
@@ -53,7 +53,7 @@ pub trait Hit {
 
 pub enum Material {
     Lambertian { albedo: Color },
-    Metal { albedo: Color },
+    Metal { albedo: Color, fuzz: f64 },
 }
 
 impl Material {
@@ -78,9 +78,10 @@ impl Material {
                 })
             }
 
-            &Material::Metal { albedo } => {
+            &Material::Metal { albedo, fuzz } => {
                 let reflected = r.direction.unit_vector().reflect(hit.normal);
-                let scattered = Ray::new(hit.p, reflected);
+                let fuzz_offset = random_in_unit_sphere(rng) * fuzz;
+                let scattered = Ray::new(hit.p, reflected + fuzz_offset);
                 let attenuation = albedo;
 
                 if scattered.direction.dot_product(hit.normal) <= 0. {
