@@ -61,6 +61,14 @@ impl Vec3 {
     pub fn unit_vector(self) -> Self {
         self / self.length()
     }
+
+    pub fn reflect(self, normal: Vec3) -> Self {
+        self - normal * self.dot_product(normal) * 2.
+    }
+
+    pub fn near_zero(self, epsilon: f64) -> bool {
+        self.0.abs() < epsilon && self.1.abs() < epsilon && self.2.abs() < epsilon
+    }
 }
 
 // Unary Operators
@@ -117,6 +125,20 @@ impl std::ops::MulAssign<f64> for Vec3 {
     }
 }
 
+impl std::ops::Mul<Vec3> for Vec3 {
+    type Output = Vec3;
+
+    fn mul(self, rhs: Vec3) -> Self::Output {
+        Vec3(self.0 * rhs.0, self.1 * rhs.1, self.2 * rhs.2)
+    }
+}
+
+impl std::ops::MulAssign<Vec3> for Vec3 {
+    fn mul_assign(&mut self, rhs: Vec3) {
+        *self = Self(self.0 * rhs.0, self.1 * rhs.1, self.2 * rhs.2);
+    }
+}
+
 impl std::ops::Div<f64> for Vec3 {
     type Output = Vec3;
 
@@ -129,4 +151,18 @@ impl std::ops::DivAssign<f64> for Vec3 {
     fn div_assign(&mut self, rhs: f64) {
         *self = Self(self.0 / rhs, self.1 / rhs, self.2 / rhs);
     }
+}
+
+pub fn random_in_unit_sphere<T: Rng>(rng: &mut T) -> Vec3 {
+    loop {
+        let p = Vec3::random_range(rng, -1., 1.);
+        if p.length_squared() >= 1. {
+            continue;
+        }
+        return p;
+    }
+}
+
+pub fn random_unit_vector<T: Rng>(rng: &mut T) -> Vec3 {
+    random_in_unit_sphere(rng).unit_vector()
 }

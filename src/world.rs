@@ -1,4 +1,4 @@
-use crate::ray::{Hit, HitRecord, Ray};
+use crate::ray::{Hit, HitRecord, Material, Ray};
 use crate::vector::Point3;
 
 pub struct World {
@@ -30,11 +30,16 @@ impl Hit for World {
 pub struct Sphere {
     pub center: Point3,
     pub radius: f64,
+    pub material: Material,
 }
 
 impl Sphere {
-    pub fn new(center: Point3, radius: f64) -> Self {
-        Self { center, radius }
+    pub fn new(center: Point3, radius: f64, material: Material) -> Self {
+        Self {
+            center,
+            radius,
+            material,
+        }
     }
 }
 
@@ -65,6 +70,6 @@ impl Hit for Sphere {
         let p = r.at(t);
         let outward_normal = (p - self.center) / self.radius;
 
-        Some(HitRecord::new(t, r, outward_normal))
+        Some(HitRecord::new(t, r, outward_normal, &self.material))
     }
 }

@@ -1,9 +1,10 @@
 use crate::cam::Camera;
-use crate::ray::{Hit, Ray};
+use crate::ray::{Hit, Material, Ray};
 use crate::vector::{Color, Point3, Vec3};
 use crate::world::{Sphere, World};
 
 use rand::prelude::*;
+use ray::ScatterResult;
 use std::io::{stderr, Write};
 
 pub mod cam;
@@ -23,9 +24,28 @@ fn main() {
     let max_depth = 50;
 
     // World
+    let material_ground = Material::Lambertian {
+        albedo: Color::new(0.8, 0.8, 0.),
+    };
+    let material_center = Material::Lambertian {
+        albedo: Color::new(0.7, 0.3, 0.3),
+    };
+    let material_left = Material::Metal {
+        albedo: Color::new(0.8, 0.8, 0.8),
+    };
+    let material_right = Material::Metal {
+        albedo: Color::new(0.8, 0.6, 0.2),
+    };
+
     let world = World::new(vec![
-        Box::new(Sphere::new(Point3::new(0., 0., -1.), 0.5)),
-        Box::new(Sphere::new(Point3::new(0., -100.5, -1.), 100.)),
+        Box::new(Sphere::new(
+            Point3::new(0., -100.5, -1.),
+            100.,
+            material_ground,
+        )),
+        Box::new(Sphere::new(Point3::new(0., 0., -1.), 0.5, material_center)),
+        Box::new(Sphere::new(Point3::new(-1., 0., -1.), 0.5, material_left)),
+        Box::new(Sphere::new(Point3::new(1., 0., -1.), 0.5, material_right)),
     ]);
 
     // Camera
@@ -86,26 +106,18 @@ fn ray_color<T: Rng>(rng: &mut T, r: Ray, world: &World, depth: i32) -> Color {
     }
 
     if let Some(hit) = world.hit(r, 0.001, std::f64::INFINITY) {
-        let target = hit.p + hit.normal + random_unit_vector(rng);
-        let scattered_ray = Ray::new(hit.p, target - hit.p);
-        return ray_color(rng, scattered_ray, world, depth - 1) * 0.5;
+        if let Some(ScatterResult {
+            scattered,
+            attenuation,
+        }) = hit.material.scatter(rng, r, hit)
+        {
+            return attenuation * ray_color(rng, scattered, world, depth - 1);
+        }
+
+        return Color::zero();
     }
 
     let unit_direction = r.direction.unit_vector();
     let t = 0.5 * (unit_direction.y() + 1.);
     Color::new(1., 1., 1.) * (1. - t) + Color::new(0.5, 0.7, 1.) * t
-}
-
-fn random_in_unit_sphere<T: Rng>(rng: &mut T) -> Vec3 {
-    loop {
-        let p = Vec3::random_range(rng, -1., 1.);
-        if p.length_squared() >= 1. {
-            continue;
-        }
-        return p;
-    }
-}
-
-fn random_unit_vector<T: Rng>(rng: &mut T) -> Vec3 {
-    random_in_unit_sphere(rng).unit_vector()
 }
