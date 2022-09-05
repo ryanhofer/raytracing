@@ -1,5 +1,6 @@
 use rand::Rng;
 
+use crate::color;
 use crate::vector::{random_in_unit_sphere, random_unit_vector, Color, Point3, Vec3};
 
 #[derive(Clone, Copy)]
@@ -52,6 +53,7 @@ pub trait Hit {
 }
 
 pub enum Material {
+    Dialectric { index_of_refraction: f64 },
     Lambertian { albedo: Color },
     Metal { albedo: Color, fuzz: f64 },
 }
@@ -59,6 +61,25 @@ pub enum Material {
 impl Material {
     pub fn scatter<T: Rng>(&self, rng: &mut T, r: Ray, hit: HitRecord) -> Option<ScatterResult> {
         match self {
+            &Material::Dialectric {
+                index_of_refraction,
+            } => {
+                let refraction_ratio = if hit.front_face {
+                    index_of_refraction.recip()
+                } else {
+                    index_of_refraction
+                };
+
+                let unit_direction = r.direction.unit_vector();
+                let refracted = unit_direction.refract(hit.normal, refraction_ratio);
+                let scattered = Ray::new(hit.p, refracted);
+                let attenuation = color::WHITE;
+
+                Some(ScatterResult {
+                    scattered,
+                    attenuation,
+                })
+            }
             &Material::Lambertian { albedo } => {
                 let scatter_direction = hit.normal + random_unit_vector(rng);
 

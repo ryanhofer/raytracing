@@ -1,16 +1,17 @@
+pub mod cam;
+pub mod color;
+pub mod ray;
+pub mod vector;
+pub mod world;
+
 use crate::cam::Camera;
-use crate::ray::{Hit, Material, Ray};
+use crate::color::{BLACK, WHITE};
+use crate::ray::{Hit, Material, Ray, ScatterResult};
 use crate::vector::{Color, Point3, Vec3};
 use crate::world::{Sphere, World};
 
 use rand::prelude::*;
-use ray::ScatterResult;
 use std::io::{stderr, Write};
-
-pub mod cam;
-pub mod ray;
-pub mod vector;
-pub mod world;
 
 fn main() {
     let mut rng = thread_rng();
@@ -27,12 +28,11 @@ fn main() {
     let material_ground = Material::Lambertian {
         albedo: Color::new(0.8, 0.8, 0.),
     };
-    let material_center = Material::Lambertian {
-        albedo: Color::new(0.7, 0.3, 0.3),
+    let material_center = Material::Dialectric {
+        index_of_refraction: 1.5,
     };
-    let material_left = Material::Metal {
-        albedo: Color::new(0.8, 0.8, 0.8),
-        fuzz: 0.3,
+    let material_left = Material::Dialectric {
+        index_of_refraction: 1.5,
     };
     let material_right = Material::Metal {
         albedo: Color::new(0.8, 0.6, 0.2),
@@ -104,7 +104,7 @@ fn write_color(pixel_color: Color, samples_per_pixel: i32) {
 
 fn ray_color<T: Rng>(rng: &mut T, r: Ray, world: &World, depth: i32) -> Color {
     if depth <= 0 {
-        return Color::zero();
+        return BLACK;
     }
 
     if let Some(hit) = world.hit(r, 0.001, std::f64::INFINITY) {
@@ -116,10 +116,10 @@ fn ray_color<T: Rng>(rng: &mut T, r: Ray, world: &World, depth: i32) -> Color {
             return attenuation * ray_color(rng, scattered, world, depth - 1);
         }
 
-        return Color::zero();
+        return BLACK;
     }
 
     let unit_direction = r.direction.unit_vector();
     let t = 0.5 * (unit_direction.y() + 1.);
-    Color::new(1., 1., 1.) * (1. - t) + Color::new(0.5, 0.7, 1.) * t
+    WHITE * (1. - t) + Color::new(0.5, 0.7, 1.) * t
 }

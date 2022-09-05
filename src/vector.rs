@@ -1,3 +1,5 @@
+use std::ops::Neg;
+
 use rand::Rng;
 
 #[derive(Clone, Copy)]
@@ -7,11 +9,11 @@ pub type Point3 = Vec3;
 pub type Color = Vec3;
 
 impl Vec3 {
-    pub fn new(x: f64, y: f64, z: f64) -> Self {
+    pub const fn new(x: f64, y: f64, z: f64) -> Self {
         Self(x, y, z)
     }
 
-    pub fn zero() -> Self {
+    pub const fn zero() -> Self {
         Self(0., 0., 0.)
     }
 
@@ -64,6 +66,13 @@ impl Vec3 {
 
     pub fn reflect(self, normal: Vec3) -> Self {
         self - normal * self.dot_product(normal) * 2.
+    }
+
+    pub fn refract(self, normal: Vec3, etai_over_etat: f64) -> Vec3 {
+        let cos_theta = (-self).dot_product(normal).min(1.);
+        let r_perp = (self + normal * cos_theta) * etai_over_etat;
+        let r_parallel = normal * (1. - r_perp.length_squared()).abs().sqrt().neg();
+        r_perp + r_parallel
     }
 
     pub fn near_zero(self, epsilon: f64) -> bool {
