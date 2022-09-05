@@ -50,7 +50,17 @@ impl Vec3 {
     }
 }
 
-// Operators
+// Unary Operators
+
+impl std::ops::Neg for Vec3 {
+    type Output = Vec3;
+
+    fn neg(self) -> Self::Output {
+        Vec3(-self.0, -self.1, -self.2)
+    }
+}
+
+// Binary Operators
 
 impl std::ops::Add for Vec3 {
     type Output = Vec3;

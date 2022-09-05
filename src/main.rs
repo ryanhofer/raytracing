@@ -1,4 +1,4 @@
-use crate::ray::Ray;
+use crate::ray::{Hit, Ray, Sphere};
 use crate::vector::{Color, Point3, Vec3};
 use std::io::{stderr, Write};
 
@@ -11,6 +11,14 @@ fn main() {
     let aspect_ratio = 16. / 9.;
     let image_width: i32 = 400;
     let image_height: i32 = (image_width as f64 / aspect_ratio) as i32;
+
+    // World
+    let world = World {
+        objects: vec![
+            Box::new(Sphere::new(Point3::new(0., 0., -1.), 0.5)),
+            Box::new(Sphere::new(Point3::new(0., -100.5, -1.), 100.)),
+        ],
+    };
 
     // Camera
 
@@ -41,7 +49,7 @@ fn main() {
             let direction = lower_left_corner + horizontal * u + vertical * v - origin;
             let r = Ray::new(origin, direction);
 
-            let pixel_color = ray_color(r);
+            let pixel_color = ray_color(r, &world);
             write_color(pixel_color);
         }
     }
@@ -56,29 +64,32 @@ fn write_color(pixel_color: Color) {
     println!("{} {} {}", r, g, b);
 }
 
-fn ray_color(r: Ray) -> Color {
-    let t = hit_sphere(Point3::new(0., 0., -1.), 0.5, r);
-    if t > 0. {
-        let n = (r.at(t) - Vec3::new(0., 0., -1.)).unit_vector();
-        return Color::new(n.x() + 1., n.y() + 1., n.z() + 1.) * 0.5;
+fn ray_color(r: Ray, world: &World) -> Color {
+    if let Some(hit) = world.hit(r, 0., std::f64::INFINITY) {
+        return (Color::new(1., 1., 1.) + hit.normal) * 0.5;
     }
 
     let unit_direction = r.direction.unit_vector();
     let t = 0.5 * (unit_direction.y() + 1.);
-    Vec3::new(1., 1., 1.) * (1. - t) + Vec3::new(0.5, 0.7, 1.) * t
+    Color::new(1., 1., 1.) * (1. - t) + Color::new(0.5, 0.7, 1.) * t
 }
 
-fn hit_sphere(center: Point3, radius: f64, r: Ray) -> f64 {
-    let oc = r.origin - center;
+struct World {
+    objects: Vec<Box<dyn Hit>>,
+}
 
-    let a = r.direction.length_squared();
-    let half_b = oc.dot_product(r.direction);
-    let c = oc.length_squared() - radius * radius;
+impl Hit for World {
+    fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<ray::HitRecord> {
+        let mut closest_hit = None;
+        let mut t_max = t_max;
 
-    let discriminant = half_b * half_b - a * c;
-    if discriminant < 0. {
-        return -1.;
+        for object in self.objects.iter() {
+            if let Some(hit) = object.hit(r, t_min, t_max) {
+                t_max = hit.t;
+                closest_hit = Some(hit);
+            }
+        }
+
+        closest_hit
     }
-
-    return (-half_b - discriminant.sqrt()) / a;
 }
