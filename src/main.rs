@@ -18,48 +18,24 @@ fn main() {
 
     // Image
 
-    let aspect_ratio = 16. / 9.;
-    let image_width: i32 = 400;
-    let image_height: i32 = (image_width as f64 / aspect_ratio) as i32;
-    let samples_per_pixel = 100;
+    let aspect_ratio = 3. / 2.;
+    let image_width = 1200;
+    let image_height = (image_width as f64 / aspect_ratio) as i32;
+    let samples_per_pixel = 500;
     let max_depth = 50;
 
     // World
 
-    let material_ground = Material::Lambertian {
-        albedo: Color::new(0.8, 0.8, 0.),
-    };
-    let material_center = Material::Lambertian {
-        albedo: Color::new(0.1, 0.2, 0.5),
-    };
-    let material_left = Material::Dialectric {
-        index_of_refraction: 1.5,
-    };
-    let material_right = Material::Metal {
-        albedo: Color::new(0.8, 0.6, 0.2),
-        fuzz: 0.0,
-    };
-
-    let world = World::new(vec![
-        Box::new(Sphere::new(
-            Point3::new(0., -100.5, -1.),
-            100.,
-            material_ground,
-        )),
-        Box::new(Sphere::new(Point3::new(0., 0., -1.), 0.5, material_center)),
-        Box::new(Sphere::new(Point3::new(-1., 0., -1.), 0.5, material_left)),
-        Box::new(Sphere::new(Point3::new(-1., 0., -1.), -0.45, material_left)),
-        Box::new(Sphere::new(Point3::new(1., 0., -1.), 0.5, material_right)),
-    ]);
+    let world = random_scene(&mut rng);
 
     // Camera
 
-    let look_from = Point3::new(3., 3., 2.);
-    let look_at = Point3::new(0., 0., -1.);
+    let look_from = Point3::new(13., 2., 3.);
+    let look_at = Point3::zero();
     let view_up = Vec3::new(0., 1., 0.);
     let vertical_fov = 20.;
-    let distance_to_focus = (look_from - look_at).length();
-    let aperture = 2.;
+    let distance_to_focus = 10.;
+    let aperture = 0.1;
 
     let camera = Camera::new(
         look_from,
@@ -140,4 +116,79 @@ fn ray_color<T: Rng>(rng: &mut T, r: Ray, world: &World, depth: i32) -> Color {
     let unit_direction = r.direction.unit_vector();
     let t = 0.5 * (unit_direction.y() + 1.);
     WHITE * (1. - t) + Color::new(0.5, 0.7, 1.) * t
+}
+
+fn random_scene<T: Rng>(rng: &mut T) -> World {
+    let mut objects: Vec<Box<dyn Hit>> = vec![];
+
+    let ground_material = Material::Lambertian {
+        albedo: Color::new(0.5, 0.5, 0.5),
+    };
+
+    objects.push(Box::new(Sphere::new(
+        Point3::new(0., -1000., 0.),
+        1000.,
+        ground_material,
+    )));
+
+    for a in -11..11 {
+        for b in -11..11 {
+            let a = a as f64;
+            let b = b as f64;
+
+            let choose_mat = rng.gen::<f64>();
+
+            let x = a + 0.9 * rng.gen::<f64>();
+            let y = 0.2;
+            let z = b + 0.9 * rng.gen::<f64>();
+
+            let center = Point3::new(x, y, z);
+            let p = Point3::new(4., 0.2, 0.);
+
+            if (center - p).length() > 0.9 {
+                let sphere_material = if choose_mat < 0.8 {
+                    // diffuse
+                    let albedo = Color::random(rng) * Color::random(rng);
+                    Material::Lambertian { albedo }
+                } else if choose_mat < 0.95 {
+                    let albedo = Color::random_range(rng, 0.5, 1.0);
+                    let fuzz = rng.gen_range(0.0..0.5);
+                    Material::Metal { albedo, fuzz }
+                } else {
+                    // glass
+                    Material::Dialectric {
+                        index_of_refraction: 1.5,
+                    }
+                };
+
+                objects.push(Box::new(Sphere::new(center, 0.2, sphere_material)));
+            }
+        }
+    }
+
+    let dialectric = Material::Dialectric {
+        index_of_refraction: 1.5,
+    };
+    objects.push(Box::new(Sphere::new(
+        Point3::new(0., 1., 0.),
+        1.,
+        dialectric,
+    )));
+
+    let lambertian = Material::Lambertian {
+        albedo: Color::new(0.4, 0.2, 0.1),
+    };
+    objects.push(Box::new(Sphere::new(
+        Point3::new(-4., 1., 0.),
+        1.,
+        lambertian,
+    )));
+
+    let metal = Material::Metal {
+        albedo: Color::new(0.7, 0.6, 0.5),
+        fuzz: 0.0,
+    };
+    objects.push(Box::new(Sphere::new(Point3::new(4., 1., 0.), 1., metal)));
+
+    World::new(objects)
 }
