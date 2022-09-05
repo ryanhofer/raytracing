@@ -83,9 +83,9 @@ fn ray_color<T: Rng>(rng: &mut T, r: Ray, world: &World, depth: i32) -> Color {
     }
 
     if let Some(hit) = world.hit(r, 0.001, std::f64::INFINITY) {
-        let target = hit.p + hit.normal + random_in_unit_sphere(rng);
-        let reflected = Ray::new(hit.p, target - hit.p);
-        return ray_color(rng, reflected, world, depth - 1) * 0.5;
+        let target = hit.p + hit.normal + random_unit_vector(rng);
+        let scattered_ray = Ray::new(hit.p, target - hit.p);
+        return ray_color(rng, scattered_ray, world, depth - 1) * 0.5;
     }
 
     let unit_direction = r.direction.unit_vector();
@@ -101,6 +101,10 @@ fn random_in_unit_sphere<T: Rng>(rng: &mut T) -> Vec3 {
         }
         return p;
     }
+}
+
+fn random_unit_vector<T: Rng>(rng: &mut T) -> Vec3 {
+    random_in_unit_sphere(rng).unit_vector()
 }
 
 struct World {
