@@ -54,11 +54,22 @@ fn main() {
 
     // Camera
 
-    let look_from = Point3::new(-2., 2., 1.);
+    let look_from = Point3::new(3., 3., 2.);
     let look_at = Point3::new(0., 0., -1.);
     let view_up = Vec3::new(0., 1., 0.);
     let vertical_fov = 20.;
-    let camera = Camera::new(look_from, look_at, view_up, vertical_fov, aspect_ratio);
+    let distance_to_focus = (look_from - look_at).length();
+    let aperture = 2.;
+
+    let camera = Camera::new(
+        look_from,
+        look_at,
+        view_up,
+        vertical_fov,
+        aspect_ratio,
+        aperture,
+        distance_to_focus,
+    );
 
     // Render
 
@@ -76,7 +87,7 @@ fn main() {
             for _ in 0..samples_per_pixel {
                 let u = (i + rng.gen::<f64>()) / (image_width - 1) as f64;
                 let v = (j + rng.gen::<f64>()) / (image_height - 1) as f64;
-                let r = camera.get_ray(u, v);
+                let r = camera.get_ray(&mut rng, u, v);
 
                 pixel_color += ray_color(&mut rng, r, &world, max_depth);
             }
