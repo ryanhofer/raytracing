@@ -53,6 +53,7 @@ pub trait Hit {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
 }
 
+#[derive(Clone, Copy)]
 pub enum Material {
     Dialectric { index_of_refraction: f64 },
     Lambertian { albedo: Color },
@@ -76,7 +77,9 @@ impl Material {
                 let sin_theta = (1. - cos_theta * cos_theta).sqrt();
 
                 let cannot_refract = refraction_ratio * sin_theta > 1.;
-                let direction = if cannot_refract {
+                let reflectance = reflectance(cos_theta, refraction_ratio);
+
+                let direction = if cannot_refract || reflectance > rng.gen() {
                     unit_direction.reflect(hit.normal)
                 } else {
                     unit_direction.refract(hit.normal, refraction_ratio)
@@ -131,4 +134,11 @@ impl Material {
 pub struct ScatterResult {
     pub scattered: Ray,
     pub attenuation: Color,
+}
+
+fn reflectance(cosine: f64, ref_idx: f64) -> f64 {
+    // Schlick's approximation for reflectance
+    let r0 = (1. - ref_idx) / (1. + ref_idx);
+    let r0 = r0 * r0;
+    r0 + (1. - r0) * (1. - cosine).powi(5)
 }

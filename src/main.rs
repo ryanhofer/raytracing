@@ -47,6 +47,7 @@ fn main() {
         )),
         Box::new(Sphere::new(Point3::new(0., 0., -1.), 0.5, material_center)),
         Box::new(Sphere::new(Point3::new(-1., 0., -1.), 0.5, material_left)),
+        Box::new(Sphere::new(Point3::new(-1., 0., -1.), -0.4, material_left)),
         Box::new(Sphere::new(Point3::new(1., 0., -1.), 0.5, material_right)),
     ]);
 
