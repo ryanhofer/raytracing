@@ -73,9 +73,9 @@ impl Hit for Sphere {
         let sqrtd = discriminant.sqrt();
 
         // Find the nearest root within the specified range (t_min, t_max)
-        let root = (-half_b - sqrtd) / a;
+        let mut root = (-half_b - sqrtd) / a;
         if root < t_min || t_max < root {
-            let root = (-half_b + sqrtd) / a;
+            root = (-half_b + sqrtd) / a;
             if root < t_min || t_max < root {
                 return None;
             }

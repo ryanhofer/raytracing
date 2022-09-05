@@ -1,3 +1,5 @@
+use rand::Rng;
+
 #[derive(Clone, Copy)]
 pub struct Vec3(pub f64, pub f64, pub f64);
 
@@ -10,7 +12,18 @@ impl Vec3 {
     }
 
     pub fn zero() -> Self {
-        Vec3(0., 0., 0.)
+        Self(0., 0., 0.)
+    }
+
+    pub fn random<T: Rng>(rng: &mut T) -> Self {
+        Self(rng.gen(), rng.gen(), rng.gen())
+    }
+
+    pub fn random_range<T: Rng>(rng: &mut T, min: f64, max: f64) -> Self {
+        let x = rng.gen_range(min..max);
+        let y = rng.gen_range(min..max);
+        let z = rng.gen_range(min..max);
+        Self(x, y, z)
     }
 
     pub fn x(self) -> f64 {
