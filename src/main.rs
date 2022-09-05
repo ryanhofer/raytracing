@@ -11,7 +11,6 @@ use crate::vector::{Color, Point3, Vec3};
 use crate::world::{Sphere, World};
 
 use rand::prelude::*;
-use std::f64::consts::PI;
 use std::io::{stderr, Write};
 
 fn main() {
@@ -26,30 +25,40 @@ fn main() {
     let max_depth = 50;
 
     // World
-    let radius: f64 = (PI / 4.).cos();
 
-    let material_left = Material::Lambertian {
-        albedo: Color::new(0., 0., 1.),
+    let material_ground = Material::Lambertian {
+        albedo: Color::new(0.8, 0.8, 0.),
     };
-    let material_right = Material::Lambertian {
-        albedo: Color::new(1., 0., 0.),
+    let material_center = Material::Lambertian {
+        albedo: Color::new(0.1, 0.2, 0.5),
+    };
+    let material_left = Material::Dialectric {
+        index_of_refraction: 1.5,
+    };
+    let material_right = Material::Metal {
+        albedo: Color::new(0.8, 0.6, 0.2),
+        fuzz: 0.0,
     };
 
     let world = World::new(vec![
         Box::new(Sphere::new(
-            Point3::new(-radius, 0., -1.),
-            radius,
-            material_left,
+            Point3::new(0., -100.5, -1.),
+            100.,
+            material_ground,
         )),
-        Box::new(Sphere::new(
-            Point3::new(radius, 0., -1.),
-            radius,
-            material_right,
-        )),
+        Box::new(Sphere::new(Point3::new(0., 0., -1.), 0.5, material_center)),
+        Box::new(Sphere::new(Point3::new(-1., 0., -1.), 0.5, material_left)),
+        Box::new(Sphere::new(Point3::new(-1., 0., -1.), -0.45, material_left)),
+        Box::new(Sphere::new(Point3::new(1., 0., -1.), 0.5, material_right)),
     ]);
 
     // Camera
-    let camera = Camera::new(90., aspect_ratio);
+
+    let look_from = Point3::new(-2., 2., 1.);
+    let look_at = Point3::new(0., 0., -1.);
+    let view_up = Vec3::new(0., 1., 0.);
+    let vertical_fov = 20.;
+    let camera = Camera::new(look_from, look_at, view_up, vertical_fov, aspect_ratio);
 
     // Render
 
