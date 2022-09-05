@@ -1,10 +1,15 @@
-use crate::ray::{Hit, Ray, Sphere};
+use crate::cam::Camera;
+use crate::ray::{Hit, Ray};
 use crate::vector::{Color, Point3, Vec3};
+use crate::world::{Sphere, World};
+
 use rand::prelude::*;
 use std::io::{stderr, Write};
 
+pub mod cam;
 pub mod ray;
 pub mod vector;
+pub mod world;
 
 fn main() {
     let mut rng = thread_rng();
@@ -18,12 +23,10 @@ fn main() {
     let max_depth = 50;
 
     // World
-    let world = World {
-        objects: vec![
-            Box::new(Sphere::new(Point3::new(0., 0., -1.), 0.5)),
-            Box::new(Sphere::new(Point3::new(0., -100.5, -1.), 100.)),
-        ],
-    };
+    let world = World::new(vec![
+        Box::new(Sphere::new(Point3::new(0., 0., -1.), 0.5)),
+        Box::new(Sphere::new(Point3::new(0., -100.5, -1.), 100.)),
+    ]);
 
     // Camera
     let camera = Camera::new();
@@ -105,60 +108,4 @@ fn random_in_unit_sphere<T: Rng>(rng: &mut T) -> Vec3 {
 
 fn random_unit_vector<T: Rng>(rng: &mut T) -> Vec3 {
     random_in_unit_sphere(rng).unit_vector()
-}
-
-struct World {
-    objects: Vec<Box<dyn Hit>>,
-}
-
-impl Hit for World {
-    fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<ray::HitRecord> {
-        let mut closest_hit = None;
-        let mut t_max = t_max;
-
-        for object in self.objects.iter() {
-            if let Some(hit) = object.hit(r, t_min, t_max) {
-                t_max = hit.t;
-                closest_hit = Some(hit);
-            }
-        }
-
-        closest_hit
-    }
-}
-
-struct Camera {
-    origin: Point3,
-    lower_left_corner: Point3,
-    horizontal: Vec3,
-    vertical: Vec3,
-}
-
-impl Camera {
-    fn new() -> Self {
-        let aspect_ratio = 16. / 9.;
-        let viewport_height = 2.;
-        let viewport_width = aspect_ratio * viewport_height;
-        let focal_length = 1.;
-
-        let origin = Point3::zero();
-        let horizontal = Vec3::new(viewport_width, 0., 0.);
-        let vertical = Vec3::new(0., viewport_height, 0.);
-        let lower_left_corner =
-            origin - horizontal / 2. - vertical / 2. - Vec3::new(0., 0., focal_length);
-
-        Self {
-            origin,
-            lower_left_corner,
-            horizontal,
-            vertical,
-        }
-    }
-
-    fn get_ray(&self, u: f64, v: f64) -> Ray {
-        Ray::new(
-            self.origin,
-            self.lower_left_corner + self.horizontal * u + self.vertical * v - self.origin,
-        )
-    }
 }
