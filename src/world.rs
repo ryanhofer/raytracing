@@ -2,11 +2,11 @@ use crate::ray::{Hit, HitRecord, Material, Ray};
 use crate::vector::Point3;
 
 pub struct World {
-    objects: Vec<Box<dyn Hit>>,
+    objects: Vec<Box<dyn Hit + Sync>>,
 }
 
 impl World {
-    pub fn new(objects: Vec<Box<dyn Hit>>) -> Self {
+    pub fn new(objects: Vec<Box<dyn Hit + Sync>>) -> Self {
         Self { objects }
     }
 }

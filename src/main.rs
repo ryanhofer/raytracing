@@ -11,6 +11,7 @@ use crate::vector::{Color, Point3, Vec3};
 use crate::world::{Sphere, World};
 
 use rand::prelude::*;
+use rayon::prelude::*;
 use std::io::{stderr, Write};
 
 fn main() {
@@ -59,14 +60,19 @@ fn main() {
             let j = j as f64;
             let i = i as f64;
 
-            let mut pixel_color = Vec3::zero();
-            for _ in 0..samples_per_pixel {
-                let u = (i + rng.gen::<f64>()) / (image_width - 1) as f64;
-                let v = (j + rng.gen::<f64>()) / (image_height - 1) as f64;
-                let r = camera.get_ray(&mut rng, u, v);
+            let pixel_color: Color = (0..samples_per_pixel)
+                .into_par_iter()
+                .map(|_| {
+                    let mut rng = thread_rng();
 
-                pixel_color += ray_color(&mut rng, r, &world, max_depth);
-            }
+                    let u = (i + rng.gen::<f64>()) / (image_width - 1) as f64;
+                    let v = (j + rng.gen::<f64>()) / (image_height - 1) as f64;
+
+                    let r = camera.get_ray(&mut rng, u, v);
+
+                    return ray_color(&mut rng, r, &world, max_depth);
+                })
+                .reduce(|| Color::zero(), |a, b| a + b);
 
             write_color(pixel_color, samples_per_pixel);
         }
@@ -119,7 +125,7 @@ fn ray_color<T: Rng>(rng: &mut T, r: Ray, world: &World, depth: i32) -> Color {
 }
 
 fn random_scene<T: Rng>(rng: &mut T) -> World {
-    let mut objects: Vec<Box<dyn Hit>> = vec![];
+    let mut objects: Vec<Box<dyn Hit + Sync>> = vec![];
 
     let ground_material = Material::Lambertian {
         albedo: Color::new(0.5, 0.5, 0.5),
