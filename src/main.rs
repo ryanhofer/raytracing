@@ -1,3 +1,4 @@
+pub mod bounds;
 pub mod cam;
 pub mod color;
 pub mod ray;

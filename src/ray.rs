@@ -1,6 +1,7 @@
 use rand::Rng;
 use std::ops::Neg;
 
+use crate::bounds::AABB;
 use crate::color;
 use crate::vector::{random_in_unit_sphere, random_unit_vector, Color, Point3, Vec3};
 
@@ -25,6 +26,7 @@ impl Ray {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct HitRecord<'a> {
     pub p: Point3,
     pub t: f64,
@@ -56,6 +58,7 @@ impl<'a> HitRecord<'a> {
 
 pub trait Hit {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
+    fn bounds(&self, time: (f64, f64)) -> Option<AABB>;
 }
 
 #[derive(Clone, Copy)]

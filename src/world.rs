@@ -1,5 +1,6 @@
+use crate::bounds::AABB;
 use crate::ray::{Hit, HitRecord, Material, Ray};
-use crate::vector::Point3;
+use crate::vector::{Point3, Vec3};
 
 pub struct World {
     objects: Vec<Box<dyn Hit + Sync>>,
@@ -24,6 +25,13 @@ impl Hit for World {
         }
 
         closest_hit
+    }
+
+    fn bounds(&self, time: (f64, f64)) -> Option<AABB> {
+        self.objects
+            .iter()
+            .filter_map(|obj| obj.bounds(time))
+            .reduce(|sum, item| sum + item)
     }
 }
 
@@ -71,6 +79,12 @@ impl Hit for Sphere {
         let outward_normal = (p - self.center) / self.radius;
 
         Some(HitRecord::new(t, r, outward_normal, &self.material))
+    }
+
+    fn bounds(&self, time: (f64, f64)) -> Option<crate::bounds::AABB> {
+        let octant = Vec3::new(self.radius, self.radius, self.radius);
+
+        Some(AABB::new(self.center - octant, self.center + octant))
     }
 }
 
@@ -132,5 +146,16 @@ impl Hit for MovingSphere {
         let outward_normal = (p - self.center(r.time)) / self.radius;
 
         Some(HitRecord::new(t, r, outward_normal, &self.material))
+    }
+
+    fn bounds(&self, time: (f64, f64)) -> Option<AABB> {
+        let c0 = self.center(time.0);
+        let c1 = self.center(time.1);
+        let octant = Vec3::new(self.radius, self.radius, self.radius);
+
+        let a = AABB::new(c0 - octant, c0 + octant);
+        let b = AABB::new(c1 - octant, c1 + octant);
+
+        Some(a + b)
     }
 }
