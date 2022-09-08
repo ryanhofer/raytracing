@@ -8,11 +8,16 @@ use crate::vector::{random_in_unit_sphere, random_unit_vector, Color, Point3, Ve
 pub struct Ray {
     pub origin: Point3,
     pub direction: Vec3,
+    pub time: f64,
 }
 
 impl Ray {
-    pub fn new(origin: Point3, direction: Vec3) -> Self {
-        Self { origin, direction }
+    pub fn new(origin: Point3, direction: Vec3, time: f64) -> Self {
+        Self {
+            origin,
+            direction,
+            time,
+        }
     }
 
     pub fn at(&self, t: f64) -> Point3 {
@@ -85,7 +90,7 @@ impl Material {
                     unit_direction.refract(hit.normal, refraction_ratio)
                 };
 
-                let scattered = Ray::new(hit.p, direction);
+                let scattered = Ray::new(hit.p, direction, r.time);
                 let attenuation = color::WHITE;
 
                 Some(ScatterResult {
@@ -93,6 +98,7 @@ impl Material {
                     attenuation,
                 })
             }
+
             &Material::Lambertian { albedo } => {
                 let scatter_direction = hit.normal + random_unit_vector(rng);
 
@@ -103,7 +109,7 @@ impl Material {
                     scatter_direction
                 };
 
-                let scattered = Ray::new(hit.p, scatter_direction);
+                let scattered = Ray::new(hit.p, scatter_direction, r.time);
                 let attenuation = albedo;
 
                 Some(ScatterResult {
@@ -115,7 +121,7 @@ impl Material {
             &Material::Metal { albedo, fuzz } => {
                 let reflected = r.direction.unit_vector().reflect(hit.normal);
                 let fuzz_offset = random_in_unit_sphere(rng) * fuzz;
-                let scattered = Ray::new(hit.p, reflected + fuzz_offset);
+                let scattered = Ray::new(hit.p, reflected + fuzz_offset, r.time);
                 let attenuation = albedo;
 
                 if scattered.direction.dot_product(hit.normal) <= 0. {

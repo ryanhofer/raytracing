@@ -12,6 +12,7 @@ pub struct Camera {
     v: Vec3,
     w: Vec3,
     lens_radius: f64,
+    time: (f64, f64),
 }
 
 impl Camera {
@@ -23,6 +24,7 @@ impl Camera {
         aspect_ratio: f64,
         aperture: f64,
         focus_distance: f64,
+        time: (f64, f64),
     ) -> Self {
         let theta = vertical_fov.to_radians();
         let h = (theta / 2.0).tan();
@@ -49,6 +51,7 @@ impl Camera {
             v,
             w,
             lens_radius,
+            time,
         }
     }
 
@@ -60,6 +63,8 @@ impl Camera {
         let direction =
             self.lower_left_corner + self.horizontal * s + self.vertical * t - self.origin - offset;
 
-        Ray::new(origin, direction)
+        let time = rng.gen_range(self.time.0..self.time.1);
+
+        Ray::new(origin, direction, time)
     }
 }

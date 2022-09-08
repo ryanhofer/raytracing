@@ -13,16 +13,17 @@ use crate::world::{Sphere, World};
 use rand::prelude::*;
 use rayon::prelude::*;
 use std::io::{stderr, Write};
+use world::MovingSphere;
 
 fn main() {
     let mut rng = thread_rng();
 
     // Image
 
-    let aspect_ratio = 3. / 2.;
-    let image_width = 1200;
+    let aspect_ratio = 16. / 9.;
+    let image_width = 400;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
-    let samples_per_pixel = 500;
+    let samples_per_pixel = 100;
     let max_depth = 50;
 
     // World
@@ -37,6 +38,7 @@ fn main() {
     let vertical_fov = 20.;
     let distance_to_focus = 10.;
     let aperture = 0.1;
+    let time = (0., 1.);
 
     let camera = Camera::new(
         look_from,
@@ -46,6 +48,7 @@ fn main() {
         aspect_ratio,
         aperture,
         distance_to_focus,
+        time,
     );
 
     // Render
@@ -152,22 +155,31 @@ fn random_scene<T: Rng>(rng: &mut T) -> World {
             let p = Point3::new(4., 0.2, 0.);
 
             if (center - p).length() > 0.9 {
-                let sphere_material = if choose_mat < 0.8 {
+                let object: Box<dyn Hit + Sync> = if choose_mat < 0.8 {
                     // diffuse
                     let albedo = Color::random(rng) * Color::random(rng);
-                    Material::Lambertian { albedo }
+                    let material = Material::Lambertian { albedo };
+                    let center = (center, center + Vec3::new(0., rng.gen_range(0.0..0.5), 0.));
+                    let time = (0., 1.);
+
+                    Box::new(MovingSphere::new(time, center, 0.2, material))
                 } else if choose_mat < 0.95 {
+                    // metal
                     let albedo = Color::random_range(rng, 0.5, 1.0);
                     let fuzz = rng.gen_range(0.0..0.5);
-                    Material::Metal { albedo, fuzz }
+                    let material = Material::Metal { albedo, fuzz };
+
+                    Box::new(Sphere::new(center, 0.2, material))
                 } else {
                     // glass
-                    Material::Dialectric {
+                    let material = Material::Dialectric {
                         index_of_refraction: 1.5,
-                    }
+                    };
+
+                    Box::new(Sphere::new(center, 0.2, material))
                 };
 
-                objects.push(Box::new(Sphere::new(center, 0.2, sphere_material)));
+                objects.push(object);
             }
         }
     }

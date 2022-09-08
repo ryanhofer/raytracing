@@ -73,3 +73,64 @@ impl Hit for Sphere {
         Some(HitRecord::new(t, r, outward_normal, &self.material))
     }
 }
+
+pub struct MovingSphere {
+    pub time: (f64, f64),
+    pub center: (Point3, Point3),
+    pub radius: f64,
+    pub material: Material,
+}
+
+impl MovingSphere {
+    pub fn new(
+        time: (f64, f64),
+        center: (Point3, Point3),
+        radius: f64,
+        material: Material,
+    ) -> Self {
+        Self {
+            time,
+            center,
+            radius,
+            material,
+        }
+    }
+
+    pub fn center(&self, time: f64) -> Point3 {
+        let t_delta = time - self.time.0;
+        let t_range = self.time.1 - self.time.0;
+        let c_delta = self.center.1 - self.center.0;
+        self.center.0 + c_delta * (t_delta / t_range)
+    }
+}
+
+impl Hit for MovingSphere {
+    fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        let oc = r.origin - self.center(r.time);
+        let a = r.direction.length_squared();
+        let half_b = oc.dot_product(r.direction);
+        let c = oc.length_squared() - self.radius * self.radius;
+
+        let discriminant = half_b * half_b - a * c;
+        if discriminant < 0. {
+            return None;
+        }
+
+        let sqrtd = discriminant.sqrt();
+        let roots = [
+            (-half_b - sqrtd) / a, // 1st root
+            (-half_b + sqrtd) / a, // 2nd root
+        ];
+
+        // Find the nearest root within the specified range (t_min, t_max)
+        let t = match roots.into_iter().find(|&t| t_min <= t && t <= t_max) {
+            Some(t) => t,
+            None => return None,
+        };
+
+        let p = r.at(t);
+        let outward_normal = (p - self.center(r.time)) / self.radius;
+
+        Some(HitRecord::new(t, r, outward_normal, &self.material))
+    }
+}
